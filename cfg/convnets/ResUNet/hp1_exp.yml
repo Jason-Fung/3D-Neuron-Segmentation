@@ -1,0 +1,44 @@
+# saving directory
+parent_dir: /home/haas/projects/def-haas/jsfung/
+raw_path: "/home/haas/projects/def-haas/jsfung/Images/Raw/*.tif"
+mask_path: "/home/haas/projects/def-haas/jsfung/Images/Mask/*.tif"
+date: "Sept 26,2022"
+
+# Model type:
+MODEL:
+  net_type: convnet # change to either convnet or transformer
+  model_name: ResUNet # BasicUNet or ResUNET
+
+# Data/Patching Configs
+DATASET:
+  batch_size: 64
+  lateral_steps: 64
+  axial_steps: 16
+  split_size: 0.8 # 80/20 - training/test
+  AUGMENTATION:
+    augment: True
+    z_deg: 25 
+    y_deg: 0
+    x_deg: 0
+
+# Model and Optimizer Settings
+LOSS: 
+  algo: dice_ce
+  weights:
+ 
+SCHEDULER:
+  algo: "LR_Cosine" # choice of LR_Expo, LR_Plateau, or LR_Cosine
+
+TRAINING:
+  max_epochs: 100
+  shuffle: True
+  num_trials: 45
+
+TRIAL_SCHEDULER: "BOHB"
+
+TUNING_ALGO: "BOHBOpt"
+
+
+
+
+
