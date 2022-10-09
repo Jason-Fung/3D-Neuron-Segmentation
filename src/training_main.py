@@ -8,6 +8,7 @@
 
 # import utility libraries
 import os
+from statistics import mean
 import numpy as np
 import gc
 from datetime import datetime
@@ -316,15 +317,30 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max = max_ep
 z_deg = config['DATASET']['AUGMENTATION']['z_deg']
 y_deg = config['DATASET']['AUGMENTATION']['y_deg']
 x_deg = config['DATASET']['AUGMENTATION']['x_deg']
+gamma_lower = config['DATASET']['AUGMENTATION']['gamma_lower']
+gamma_upper = config['DATASET']['AUGMENTATION']['gamma_upper']
+noise_mean = config['DATASET']['AUGMENTATION']['mean_noise']
+noise_std = config['DATASET']['AUGMENTATION']['std_noise']
 
+gamma = (gamma_lower,gamma_upper)
+gauss_mean = (0,noise_mean)
+gauss_std = (0,noise_std)
 degree = (z_deg, y_deg, x_deg)
 # translate = (10,10,10)
 transform_rotate = torchio.RandomAffine(degrees=degree, 
 #                                         translation=translate, 
                                         image_interpolation="bspline")
-transform_flip = torchio.RandomFlip(axes=('ap',))
-all_transform = torchio.Compose([transform_rotate,
-                                 transform_flip])
+transform_noise = torchio.RandomNoise(mean=gauss_mean, std=gauss_std)
+transform_gamma = torchio.RandomGamma(log_gamma=gamma)
+transform_flip = torchio.RandomFlip(axes=('ap',), 
+                                    flip_probability=1,
+                                    )
+all_transform = torchio.Compose([
+                                 transform_gamma,
+                                 transform_rotate,
+                                 transform_flip,
+                                 transform_noise,
+                                 ])
 
 
 # ## Define Training and Validation Functions
