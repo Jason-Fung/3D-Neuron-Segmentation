@@ -1,0 +1,63 @@
+# saving directory
+model_name: SwinUNETR
+parent_dir: /home/haas/projects/def-haas/jsfung
+raw_path: "/home/jsfung/projects/def-haas/jsfung/Images/new_labels/Raw/*.tif"
+mask_path: "/home/jsfung/projects/def-haas/jsfung/Images/new_labels/Mask/*.tif"
+date: now
+
+# Data/Patching Configs
+DATASET:
+  exp: '+s_+d_-f'
+  batch_size: 16
+  lateral_steps: 64
+  axial_steps: 32
+  z_patch: 32
+  y_patch: 64
+  x_patch: 64
+  folds: 4 # 80/20 - training/test
+  remove_artifacts: False
+  artifacts: [7]
+  ex_autofluorescence: False
+  ex_melanocytes: True
+  AUGMENTATION:
+    augment: True
+    z_deg: 25 
+    y_deg: 0
+    x_deg: 0
+    gamma_lower: -0.5
+    gamma_upper: 0.6
+    mean_noise: 0.05
+    std_noise: 0.025
+
+# Model and Optimizer Settings
+loss: dice
+weights:
+max_epochs: 300
+
+MODEL:
+  model_arch: SwinUNETR
+  dropout: 0.0
+  attn_dropout: 0.0
+  dropout_path_rate: 0.0
+  learning_rate: 7.54E-5
+  l2: 0.0
+  norm: instance
+  input_dim: 1
+  depths: [2,2,2,2]
+  num_heads: [3,6,12,24]
+  feature_size: 48
+  spatial_dim: 3
+
+
+
+# Learning Rate Scheduler
+end_cycle: 30
+
+TRAINING:
+  shuffle: True
+
+
+
+
+
+

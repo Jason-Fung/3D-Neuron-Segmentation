@@ -1,0 +1,92 @@
+# saving directory
+model_name: SwinUNETR
+parent_dir: /home/haas/projects/def-haas/jsfung
+raw_path: "/home/jsfung/projects/def-haas/jsfung/Images/new_labels/Raw/*.tif"
+mask_path: "/home/jsfung/projects/def-haas/jsfung/Images/new_labels/Mask/*.tif"
+date: now
+
+# Model type:
+MODEL:
+  net_type: transformer # change to either convnet or transformer
+  model_name: SwinUNETR # BasicUNet or ResUNET
+
+# Data/Patching Configs
+DATASET:
+  batch_size: 128
+  lateral_steps: 128
+  axial_steps: 16
+  split_size: 0.8 # 80/20 - training/test
+  AUGMENTATION:
+    augment: True
+    z_deg: 25 
+    y_deg: 0
+    x_deg: 0
+
+
+# Data/Patching Configs
+DATASET:
+  exp: '+s_+d_-f'
+  batch_size: 128
+  lateral_steps: 64
+  axial_steps: 8
+  z_patch: 16
+  y_patch: 128
+  x_patch: 128
+  folds: 4 # 80/20 - training/test
+  remove_artifacts: False
+  artifacts: [7]
+  ex_autofluorescence: False
+  ex_melanocytes: True
+  AUGMENTATION:
+    augment: True
+    z_deg: 25
+    y_deg: 0
+    x_deg: 0
+    gamma_lower: -0.5
+    gamma_upper: 0.6
+    mean_noise: 0.05
+    std_noise: 0.025
+
+# Model and Optimizer Settings
+LOSS:
+  loss: dice_ce
+  weights:
+  max_epochs: 80
+
+MODEL:
+  model_arch: SwinUNETR
+  dropout: 0.10
+  attn_dropout: 0.10
+  learning_rate: 0.00000754
+  l2: 0.00421
+  norm: batch
+  input_dim: 1
+  depths: [2,2,2,2]
+  num_heads: [3,6,12,24] 
+  feature_size: 24
+  channel_layers: [32, 64, 128, 256, 512]
+  num_res_units: 2
+  strides: [2,2,2,2]
+  spatial_dim: 3
+
+
+# Model and Optimizer Settings
+LOSS: 
+  algo: dice
+
+SCHEDULER:
+  algo: "LR_Cosine" # choice of LR_Expo, LR_Plateau, or LR_Cosine
+
+TRAINING:
+  max_epochs: 100
+  shuffle: True
+  num_trials: 45
+
+TRIAL_SCHEDULER: "BOHB"
+
+TUNING_ALGO: "BOHBOpt"
+
+
+
+
+

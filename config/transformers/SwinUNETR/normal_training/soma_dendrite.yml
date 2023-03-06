@@ -1,0 +1,45 @@
+# saving directory
+model_name: ResUNet
+parent_dir: /home/haas/projects/def-haas/jsfung
+raw_path: "/home/jsfung/projects/def-haas/jsfung/Images/Raw/*.tif"
+mask_path: "/home/jsfung/projects/def-haas/jsfung/Images/Mask/*.tif"
+date: "Oct 9, 2022"
+
+# Data/Patching Configs
+DATASET:
+  exp: '+s +d -f'
+  batch_size: 64
+  lateral_steps: 64
+  axial_steps: 16
+  split_size: 0.8 # 80/20 - training/test
+  AUGMENTATION:
+    augment: True
+    z_deg: 25 
+    y_deg: 0
+    x_deg: 0
+    gamma_lower: -0.5
+    gamma_upper: 0.6
+    mean_noise: 0.05
+    std_noise: 0.025
+
+# Model and Optimizer Settings
+loss: dice_ce
+weights:
+
+max_epochs: 150
+dropout: 0.10
+learning_rate: 0.0000754
+l2: 0.00421
+norm: batch
+
+# Learning Rate Scheduler
+end_cycle: 30
+
+TRAINING:
+  shuffle: True
+
+
+
+
+
+
