@@ -1,0 +1,5 @@
+soma_dendrite_filo.yml	fold_1.yml
+soma_dendrite_filo.yml	fold_2.yml
+soma_dendrite_filo.yml	fold_3.yml
+soma_dendrite_filo.yml	fold_4.yml
+soma_dendrite_filo.yml	fold_5.yml

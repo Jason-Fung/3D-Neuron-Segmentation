@@ -43,7 +43,7 @@ class configure_engines:
         self.shuffle = data_cfg['TRAINING']['shuffle']
 
 
-    def train(self, engine, batch):
+    def train_sequential_image_based(self, engine, batch):
         # def step_scheduler():
         #     self.scheduler.step()
         # set up augmentation
@@ -239,7 +239,7 @@ class configure_engines:
         return {"batch_loss":running_loss/count_loss, "y_pred":reconstructed, "y":gt_mask}
 
         
-    def validate(self, engine, batch):
+    def validate_sequential_image_based(self, engine, batch):
         self.model.eval()
         with torch.no_grad():
             running_loss = 0

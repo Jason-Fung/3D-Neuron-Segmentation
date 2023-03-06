@@ -96,16 +96,25 @@ with open(project_path + exp_path + exp_file, "r") as stream:
         print(exc)  
 
 # Cloud Server
-# raw_path = config['raw_path']
-# mask_path = config['mask_path']
+raw_path = config['raw_path']
+mask_path = config['mask_path']
+
+segmentation_exp = config['DATASET']['exp']
+
+if segmentation_exp == "+s +d +f":
+    num_classes = 4
+if segmentation_exp == '+s +d -f':
+    num_classes = 3
+if segmentation_exp == '-s +d -f':
+    num_classes = 2
 
 # # Jason's Desktop
 # raw_path = "I:\My Drive\Raw\*.tif"
 # mask_path = "I:\My Drive\Mask\*.tif"
 
 # # Jason's Macbook
-raw_path = "/Users/jasonfung/haaslabdataimages@gmail.com - Google Drive/My Drive/Images/Raw/*.tif"
-mask_path = "/Users/jasonfung/haaslabdataimages@gmail.com - Google Drive/My Drive/Images/Mask/*.tif"
+#raw_path = "/Users/jasonfung/haaslabdataimages@gmail.com - Google Drive/My Drive/Images/Raw/*.tif"
+#mask_path = "/Users/jasonfung/haaslabdataimages@gmail.com - Google Drive/My Drive/Images/Mask/*.tif"
 
 raw_filename_list = glob.glob(raw_path) 
 mask_filename_list = glob.glob(mask_path)
@@ -126,18 +135,18 @@ time = datetime.now(tz=pytz.utc).strftime('%H%M%S')
 model_directory =  project_path + f"/results/{model_name}/"
 date_directory = f"/{date}/"
 time_directory = f"{date}_{time}/"
-log_directory = model_directory + date_directory + time_directory + "log"
-os.makedirs(log_directory)
+log_directory = model_directory + date_directory + segmentation_exp + time_directory
+os.makedirs(log_directory+"log")
 
 # create writer to log results into tensorboard
-log_writer = SummaryWriter(log_directory)
+log_writer = SummaryWriter(log_directory+"log")
 
 
 # In[20]:
-output_txt = open(model_directory+date_directory+time_directory+'results.txt', 'w')
-exp_configs = open(model_directory+date_directory+time_directory+'experiment.yml', 'w')
+output_txt = open(log_directory +'results.txt', 'w')
+exp_configs = open(log_directory +'experiment.yml', 'w')
 
-with open(model_directory+date_directory+time_directory + 'experiment.yml', 'w') as outfile:
+with open(log_directory + 'experiment.yml', 'w') as outfile:
      yaml.dump(config, outfile, default_flow_style=False)
 # ## Processing Classes
 
@@ -168,13 +177,6 @@ split_size = config['DATASET']['split_size']
 segmentation_exp = config['DATASET']['exp']
 dim_order = (0,4,1,2,3) # define the image and mask dimension order
 
-if segmentation_exp == "+s +d +f":
-    num_classes = 4
-if segmentation_exp == '+s +d -f':
-    num_classes = 3
-if segmentation_exp == '-s +d -f':
-    num_classes = 2
-
 patch_transform = transforms.Compose([
 #                                       new_shape(new_xy = (600,960)),
                                       MinMaxScalerVectorized(),
@@ -185,6 +187,7 @@ label_transforms = transforms.Compose([
 #                                        new_shape(new_xy = (600,960)),
                                        process_masks(exp = segmentation_exp),
                                        patch_imgs(xy_step = lateral_steps, z_step = axial_steps, patch_size = patch_size, is_mask = True)])
+
 
 
 raw_training_list, mask_training_list = raw_filename_list[:int(split_size*len(raw_filename_list))], mask_filename_list[:int(split_size*len(mask_filename_list))]
@@ -236,7 +239,7 @@ output_chnl = num_classes
 model = UNet(spatial_dims=3, 
              in_channels = input_chnl,
              out_channels = output_chnl,
-             channels = (16, 32, 64, 128, 256),
+             channels = (32, 64, 128, 256, 512),
              strides=(2, 2, 2, 2),
              num_res_units=2,
              norm = norm_type,
@@ -269,7 +272,7 @@ elif weight_config == None:
 else:
     class_weights = weight_config
 
-with open(model_directory+date_directory+time_directory+'results.txt', 'w') as results_file:
+with open(log_directory+'results.txt', 'w') as results_file:
     results_file.write("Using {}".format(loss_type))
 
 if loss_type == "dice_focal":
@@ -332,9 +335,7 @@ transform_rotate = torchio.RandomAffine(degrees=degree,
                                         image_interpolation="bspline")
 transform_noise = torchio.RandomNoise(mean=gauss_mean, std=gauss_std)
 transform_gamma = torchio.RandomGamma(log_gamma=gamma)
-transform_flip = torchio.RandomFlip(axes=('ap',), 
-                                    flip_probability=1,
-                                    )
+transform_flip = torchio.RandomFlip(axes=('ap',))
 all_transform = torchio.Compose([
                                  transform_gamma,
                                  transform_rotate,
@@ -711,10 +712,10 @@ def print_start(trainer):
 def print_epoch(trainer):
     print("Epoch : {}".format(trainer.state.epoch))
 
-@trainer.on(Events.TERMINATE)
-def save_results_to_yaml(trainer):
-    with open(model_directory+date_directory+time_directory+'exp_configs.yml', 'w') as exp_configs:
-        yaml.dump(config, exp_configs, default_flow_style = False)
+#@trainer.on(Events.TERMINATE)
+#def save_results_to_yaml(trainer):
+#    with open(model_directory+date_directory+time_directory+'exp_configs.yml', 'w') as exp_configs:
+#        yaml.dump(config, exp_configs, default_flow_style = False)
 
 
 @trainer.on(Events.EPOCH_COMPLETED)
@@ -726,7 +727,7 @@ def save_model(trainer):
     
     epoch = trainer.state.epoch
     def get_saved_model_path(epoch):
-        return model_directory + date_directory + time_directory + f"{model_name}_{epoch}.pth"
+        return log_directory + f"{segmentation_exp}_{model_name}_{epoch}.pth"
 
     # initialize global values
     best_dice = -torch.inf if epoch == 1 else best_dice
@@ -741,7 +742,7 @@ def save_model(trainer):
         # pbar.log_message(
         #     "Training Results - Epoch: {} \nMetrics\n{}"
         #     .format(trainer.state.epoch, pprint.pformat(training_metrics)))
-        with open(model_directory+date_directory+time_directory+'results.txt', 'a') as results_file:
+        with open(log_directory+'results.txt', 'a') as results_file:
             results_file.write("Training Results - Epoch: {} \nMetrics\n{}\n".format(trainer.state.epoch, pprint.pformat(training_metrics)))
         return training_metrics
     
@@ -753,7 +754,7 @@ def save_model(trainer):
         # pbar.log_message(
         #     "Validation Results - Epoch: {} \nMetrics\n{}"
         #     .format(trainer.state.epoch, pprint.pformat(testing_metrics)))
-        with open(model_directory+date_directory+time_directory+'results.txt', 'a') as results_file:
+        with open(log_directory+'results.txt', 'a') as results_file:
             results_file.write("Validation Results - Epoch: {} \nMetrics\n{}\n".format(trainer.state.epoch, pprint.pformat(testing_metrics)))
         return testing_metrics
     
@@ -763,8 +764,6 @@ def save_model(trainer):
     train_dice = training_metrics['Dice']
     val_dice = testing_metrics['Dice']
 
-    train_mean_dice = torch.mean(train_dice)
-    val_mean_dice = torch.mean(val_dice)
     train_loss = training_metrics['batch_loss']
     val_loss = testing_metrics['batch_loss']
     
@@ -772,11 +771,18 @@ def save_model(trainer):
     # log results
     log_writer.add_scalars('Training vs. Validation Loss',
                        {'Training' : train_loss, 'Validation' : val_loss}, epoch)
-    log_writer.add_scalars('Training vs. Validation Mean Dice ',
-                       {'Training Mean Dice' : train_mean_dice, 'Validation Mean Dice' : val_mean_dice}, epoch)
     if num_classes >= 2:
-        log_writer.add_scalars('Training vs. Validation Soma Dice ',
-                        {'Training Soma Dice' : train_dice[0], 'Validation Soma Dice' : val_dice[0]}, epoch)
+        if torch.is_tensor(val_dice) == False:
+            log_writer.add_scalars('Training vs. Validation Neuron Dice ',
+                            {'Training Neuron Dice' : train_dice, 'Validation Neuron Dice' : val_dice}, epoch)
+        else:
+            log_writer.add_scalars('Training vs. Validation Soma Dice ',
+                            {'Training Soma Dice' : train_dice[0], 'Validation Soma Dice' : val_dice[0]}, epoch)
+
+            train_mean_dice = torch.mean(train_dice)
+            val_mean_dice = torch.mean(val_dice)
+            log_writer.add_scalars('Training vs. Validation Mean Dice ',
+                       {'Training Mean Dice' : train_mean_dice, 'Validation Mean Dice' : val_mean_dice}, epoch)
         if num_classes >= 3:
             log_writer.add_scalars('Training vs. Validation Dendrite Dice ',
                             {'Training Dendrite Dice' : train_dice[1], 'Validation Dendrite Dice' : val_dice[1]}, epoch)
@@ -799,7 +805,7 @@ def save_model(trainer):
         best_epoch_file = get_saved_model_path(best_epoch)
 #         print(f'\nEpoch: {best_epoch} - New best Dice and Loss! Mean Dice: {best_dice} Loss: {best_loss}\n\n\n')
         # print(f'\nEpoch: {best_epoch} - New best Loss! Loss: {best_loss}\n\n\n')
-        with open(model_directory+date_directory+time_directory+'results.txt', 'a') as results_file:
+        with open(log_directory+'results.txt', 'a') as results_file:
             results_file.write(f'\nEpoch: {best_epoch} - New best Loss! Loss: {best_loss}\n\n\n')
         torch.save(model.state_dict(), best_epoch_file)
 
